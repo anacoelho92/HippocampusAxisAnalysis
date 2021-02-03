@@ -77,10 +77,12 @@ def compute_areas(nplanes,centerline_coords,plane_centers, surface, renderer,dis
         
     areas=[]
     centerOfMass = []
+    vectors = []
     
     # cut the surface with the defined planes and compute areas
     for i in range(planes_col.GetNumberOfItems()):
         plane = planes_col.GetItem(i)
+        vectors.append(plane.GetNormal()) # save normal vector of all planes
                 
         # cut the surface
         cutter = vtk.vtkCutter()
@@ -135,7 +137,7 @@ def compute_areas(nplanes,centerline_coords,plane_centers, surface, renderer,dis
             renderer.AddActor(circleActor)
             renderer.AddActor(boundaryActor)
         
-    return areas,centerOfMass,planes_col
+    return areas,centerOfMass,planes_col,vectors
 
 
 # function to compute volumes of the sections
@@ -609,7 +611,7 @@ def interpolate_bezier(start_pt,end_pt,centers,nplanes,renderer,display):
  
 
 # main function that corrects the line, computes planes and volumes of sections
-def centerline_analysis(roi_file, centerline_file,ctrl_pts_file, nplanes):
+def centerline_analysis(roi_file, centerline_file,ctrl_pts_file, nplanes, LoR, out_dir):
     
     # load hippocampus STL file    
     reader_stl = vtk.vtkSTLReader()
@@ -773,6 +775,10 @@ def centerline_analysis(roi_file, centerline_file,ctrl_pts_file, nplanes):
     # create new planes with the updated line
     areas,centerOfMass, planes_col = compute_areas(nplanes,new_centerline_coords,new_centers, smoothFilter, renderer,1)
 
+    # save centers and normals of all planes to create nifti images for tractography
+    np.savetxt(os.path.join(out_dir, LoR + '_centers.txt'), centerOfMass)
+    np.savetxt(os.path.join(out_dir, LoR + '_normals.txt'), planes_vectors)
+    
     # add first and last line points to the scene with different colors
     addPoint(renderer,new_centerline_coords[0,:], color=[1,0,0])
     addPoint(renderer,new_centerline_coords[len(new_centerline_coords)-1,:], color=[0,1,0])
@@ -828,7 +834,8 @@ else:
             # control points file
             ctrl_pts_path = os.path.join(working_dir, subject,subject+'_'+LoR+'_'+roi_name+'_ctrl_pts.txt')
             # run centerline analysis
-            subj_areas, subj_vol, subj_total_vol = centerline_analysis(roi_sub_path, centerline_sub_path, ctrl_pts_path, nplanes)
+            out_dir = os.path.join(working_dir, subject) # directory to save planes center and normal vector (to create nifti images for tractography)
+            subj_areas, subj_vol, subj_total_vol = centerline_analysis(roi_sub_path, centerline_sub_path, ctrl_pts_path, nplanes, LoR, out_dir)
             
             # save areas and volumes of all subjects
             areas[:,i] = subj_areas
