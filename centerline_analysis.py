@@ -767,13 +767,13 @@ def centerline_analysis(roi_file, centerline_file,ctrl_pts_file, nplanes, LoR, o
           
     
     # create planes and compute area of intersection of each plane
-    areas,centerOfMass, planes_col = compute_areas(nplanes,centerline_coords,new_pts, smoothFilter, renderer,0)
+    areas,centerOfMass, planes_col, planes_vectors = compute_areas(nplanes,centerline_coords,new_pts, smoothFilter, renderer,0)
     
     # update line to pass through the center of mass of all planes
     new_centerline_coords, new_centers = interpolate_bezier(centerline_coords[0],centerline_coords[len(centerline_coords)-1],centerOfMass,nplanes,renderer,1)
 
     # create new planes with the updated line
-    areas,centerOfMass, planes_col = compute_areas(nplanes,new_centerline_coords,new_centers, smoothFilter, renderer,1)
+    areas,centerOfMass, planes_col, planes_vectors = compute_areas(nplanes,new_centerline_coords,new_centers, smoothFilter, renderer,1)
 
     # save centers and normals of all planes to create nifti images for tractography
     np.savetxt(os.path.join(out_dir, LoR + '_centers.txt'), centerOfMass)
